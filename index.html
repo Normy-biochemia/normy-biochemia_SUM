@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Normy Laboratoryjne</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f2eb;
+    --paper: #fdfbf7;
+    --ink: #1a1a18;
+    --ink-light: #5a5a52;
+    --accent: #c8411a;
+    --accent-light: #f5ddd7;
+    --green: #1a6e3c;
+    --green-light: #d4edd f;
+    --border: #c8c4b8;
+    --correct: #1a6e3c;
+    --wrong: #c8411a;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .page-header {
+    max-width: 860px;
+    margin: 0 auto 2.5rem;
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 1.2rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .page-header p {
+    margin-top: 0.4rem;
+    color: var(--ink-light);
+    font-size: 0.9rem;
+  }
+
+  .controls {
+    max-width: 860px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.5rem 1.1rem;
+    border: 2px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: background 0.12s, color 0.12s;
+  }
+  .btn:hover { background: var(--accent); border-color: var(--accent); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--ink);
+  }
+  .btn-outline:hover { background: var(--ink); color: var(--paper); }
+
+  .score-bar {
+    max-width: 860px;
+    margin: 0 auto 2rem;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    padding: 1rem 1.4rem;
+    display: none;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .score-bar.visible { display: flex; }
+
+  .score-num {
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .score-label { font-size: 0.85rem; color: var(--ink-light); }
+
+  .progress-track {
+    flex: 1;
+    min-width: 140px;
+    height: 8px;
+    background: var(--border);
+    border-radius: 0;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.4s ease;
+  }
+
+  .section {
+    max-width: 860px;
+    margin: 0 auto 2rem;
+    background: var(--paper);
+    border: 1px solid var(--border);
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--paper);
+    background: var(--ink);
+    padding: 0.5rem 1rem;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  th {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #eee9df;
+    color: var(--ink-light);
+    padding: 0.55rem 0.9rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 0.45rem 0.9rem;
+    border-bottom: 1px solid #e8e4da;
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f9f6ef; }
+
+  .param-name {
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.35;
+  }
+
+  .material {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--ink-light);
+  }
+
+  .answer-cell {
+    position: relative;
+  }
+
+  input.answer {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    width: 100%;
+    min-width: 140px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink);
+    padding: 0.3rem 0.5rem;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input.answer:focus { border-color: var(--ink); background: #fff; }
+
+  input.answer.correct {
+    background: #e6f4ec;
+    border-color: var(--correct);
+    color: var(--correct);
+  }
+
+  input.answer.wrong {
+    background: #fce8e3;
+    border-color: var(--wrong);
+    color: var(--wrong);
+  }
+
+  .hint {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    margin-top: 0.2rem;
+    display: none;
+    color: var(--correct);
+  }
+  .hint.show { display: block; }
+  .hint.wrong-hint { color: var(--wrong); }
+
+  .correct-val {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--correct);
+    font-weight: 600;
+    display: none;
+  }
+  .correct-val.show { display: block; }
+
+  .mode-toggle {
+    display: flex;
+    gap: 0;
+    border: 2px solid var(--ink);
+    overflow: hidden;
+  }
+  .mode-toggle button {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.9rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--ink-light);
+  }
+  .mode-toggle button.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .tip {
+    max-width: 860px;
+    margin: 0 auto 1.5rem;
+    font-size: 0.8rem;
+    color: var(--ink-light);
+    font-family: var(--mono);
+    padding: 0.5rem 0.75rem;
+    border-left: 3px solid var(--border);
+  }
+
+  /* Tolerance indicator */
+  .tol-badge {
+    font-size: 0.65rem;
+    font-family: var(--mono);
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 0.1rem 0.35rem;
+    display: inline-block;
+    margin-left: 0.3rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>30. Normy Laboratoryjne — Quiz</h1>
+  <p>Wpisz zakresy wartości, materiał badany lub jednostki. Sprawdź, ile pamiętasz.</p>
+</div>
+
+<div class="controls">
+  <button class="btn" onclick="checkAll()">✓ Sprawdź wszystko</button>
+  <button class="btn btn-outline" onclick="resetAll()">↺ Reset</button>
+  <button class="btn btn-outline" onclick="showAll()">👁 Pokaż odpowiedzi</button>
+  <div class="mode-toggle">
+    <button class="active" onclick="setMode('values')" id="mode-values">Zakresy</button>
+    <button onclick="setMode('material')" id="mode-material">Materiał</button>
+  </div>
+</div>
+
+<div class="tip">💡 Wpisz zakres np. <strong>7,35 – 7,45</strong> lub <strong>35-45</strong>. Akceptowane są różne formaty zapisu.</div>
+
+<div class="score-bar" id="scoreBar">
+  <div>
+    <div class="score-num" id="scoreNum">0/0</div>
+    <div class="score-label">poprawnych odpowiedzi</div>
+  </div>
+  <div class="progress-track" style="flex:1">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+</div>
+
+<!-- SECTION 1 -->
+<div class="section">
+  <div class="section-title">5. Bufory organizmu</div>
+  <table>
+    <thead><tr>
+      <th>Parametr</th><th>Materiał badany</th><th>Zakres wartości</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">pH</td>
+        <td class="material" data-answer="krew"><span class="q-material"></span><span class="correct-val">krew</span></td>
+        <td class="answer-cell" data-answer="7,35 – 7,45" data-alt="7.35-7.45|7,35-7,45|7.35–7.45">
+          <input class="answer" type="text" placeholder="…">
+          <div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">[H⁺]</td>
+        <td class="material" data-answer="krew"><span class="q-material"></span><span class="correct-val">krew</span></td>
+        <td class="answer-cell" data-answer="35 – 45 nmol/l" data-alt="35-45 nmol/l|35–45 nmol/l">
+          <input class="answer" type="text" placeholder="…">
+          <div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">pCO₂</td>
+        <td class="material" data-answer="krew"><span class="q-material"></span><span class="correct-val">krew</span></td>
+        <td class="answer-cell" data-answer="35 – 45 mmHg" data-alt="35-45 mmHg|35–45 mmHg|4,7-6,0 kPa|4.7-6.0 kPa">
+          <input class="answer" type="text" placeholder="…">
+          <div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">[HCO₃⁻]</td>
+        <td class="material" data-answer="krew"><span class="q-material"></span><span class="correct-val">krew</span></td>
+        <td class="answer-cell" data-answer="21 – 27 mmol/l" data-alt="21-27 mmol/l|21–27 mmol/l">
+          <input class="answer" type="text" placeholder="…">
+          <div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 2 -->
+<div class="section">
+  <div class="section-title">6. Przestrzenie wodne — elektrolity</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał badany</th><th>Norma (mmol/l)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">Sód (Na⁺)</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="135 – 145 mmol/l" data-alt="135-145 mmol/l|135–145|135-145">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Potas (K⁺)</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="3,5 – 5,5 mmol/l" data-alt="3.5-5.5 mmol/l|3,5-5,5 mmol/l|3,5–5,5">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Chlorki (Cl⁻)</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="95 – 105 mmol/l" data-alt="95-105 mmol/l|95–105">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 3 -->
+<div class="section">
+  <div class="section-title">9. Białka</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał</th><th>Norma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">Białko całkowite</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="6,0 – 8,0 g/dl" data-alt="6.0-8.0 g/dl|6-8 g/dl|6,0-8,0 g/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Albuminy</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="3,5 – 5,0 g/dl" data-alt="3.5-5.0 g/dl|3,5-5,0 g/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Fibrynogen</td>
+        <td class="material" data-answer="osocze"><span class="q-material"></span><span class="correct-val">osocze</span></td>
+        <td class="answer-cell" data-answer="1,5 – 4,0 g/dl" data-alt="1.5-4.0 g/dl|1,5-4,0">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">CRP</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="< 10 mg/l" data-alt="<10 mg/l|poniżej 10 mg/l|&lt;10 mg/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Ceruloplazmina</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="30 – 58 mg/dl" data-alt="30-58 mg/dl|2,24-4,33 µmol/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 4 -->
+<div class="section">
+  <div class="section-title">12. Markery biochemiczne — enzymy wątrobowe</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał</th><th>Norma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">ALT (aminotransferaza alaninowa)</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="< 40 UI/l" data-alt="&lt;40 UI/l|<40 UI/l|poniżej 40 UI/l|< 0,67 µkat/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">AST (aminotransferaza asparaginianowa)</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="< 40 UI/l" data-alt="&lt;40 UI/l|<40 UI/l|< 0,67 µkat/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Fosfataza zasadowa (ALP)</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="< 120 UI/l" data-alt="&lt;120 UI/l|<120 UI/l|< 2 µkat/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">γ-GT — kobiety</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="< 35 UI/l" data-alt="&lt;35 UI/l|<35 UI/l|< 0,58 µkat/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">γ-GT — mężczyźni</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="< 40 UI/l" data-alt="&lt;40 UI/l|<40 UI/l|< 0,67 µkat/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 5 -->
+<div class="section">
+  <div class="section-title">13. Witaminy</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał</th><th>Norma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">Witamina B12</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="200 – 1000 ng/l" data-alt="200-1000 ng/l|148-740 pmol/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Kwas foliowy</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="3,1 – 12 µg/l" data-alt="3.1-12 µg/l|3,1-12 µg/l|7-26 nmol/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">25-OH-D (wit. D)</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="30 – 50 µg/l" data-alt="30-50 µg/l|75-125 nmol/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 6 -->
+<div class="section">
+  <div class="section-title">14. Pierwiastki śladowe</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał</th><th>Norma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">Żelazo — kobiety</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="50 – 170 µg/dl" data-alt="50-170 µg/dl|9-30 µmol/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Żelazo — mężczyźni</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="70 – 190 µg/dl" data-alt="70-190 µg/dl|13-34 µmol/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Transferyna</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="200 – 400 mg/dl" data-alt="200-400 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Ferrytyna — kobiety</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="30 – 200 µg/l" data-alt="30-200 µg/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Ferrytyna — mężczyźni</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="30 – 400 µg/l" data-alt="30-400 µg/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Miedź</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="80 – 130 µg/dl" data-alt="80-130 µg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 7 -->
+<div class="section">
+  <div class="section-title">15. Markery nowotworowe</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał</th><th>Norma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">PSA</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="0 – 4 ng/ml" data-alt="0-4 ng/ml|&lt;4 ng/ml|<4 ng/ml">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">CEA — palący</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="0 – 5,8 ng/ml" data-alt="0-5.8 ng/ml|0-5,8 ng/ml|&lt;5,8 ng/ml">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">CEA — niepalący</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="0 – 3,2 ng/ml" data-alt="0-3.2 ng/ml|0-3,2 ng/ml|&lt;3,2 ng/ml">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">AFP</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="0 – 6 µg/ml" data-alt="0-6 µg/ml|&lt;6 µg/ml">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 8 -->
+<div class="section">
+  <div class="section-title">16. Wapń, fosfor, magnez</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał</th><th>Norma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">Wapń całkowity</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="2,25 – 2,75 mmol/l" data-alt="2.25-2.75 mmol/l|9-11 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Wapń zjonizowany</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="1,0 – 1,3 mmol/l" data-alt="1.0-1.3 mmol/l|4-5,2 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Fosfor (Pi) — stężenie</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="0,9 – 1,6 mmol/l" data-alt="0.9-1.6 mmol/l|2,8-5,0 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Magnez</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="0,65 – 1,2 mmol/l" data-alt="0.65-1.2 mmol/l|1,7-2,7 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 9 -->
+<div class="section">
+  <div class="section-title">17. Węglowodany</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał</th><th>Norma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">Glukoza na czczo</td>
+        <td class="material" data-answer="osocze"><span class="q-material"></span><span class="correct-val">osocze</span></td>
+        <td class="answer-cell" data-answer="3,9 – 5,5 mmol/l" data-alt="3.9-5.5 mmol/l|70-99 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Glukoza 2h po OGTT</td>
+        <td class="material" data-answer="osocze"><span class="q-material"></span><span class="correct-val">osocze</span></td>
+        <td class="answer-cell" data-answer="< 7,8 mmol/l" data-alt="&lt;7.8 mmol/l|<7,8 mmol/l|<140 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">HbA1c</td>
+        <td class="material" data-answer="krew"><span class="q-material"></span><span class="correct-val">krew</span></td>
+        <td class="answer-cell" data-answer="< 5,7%" data-alt="&lt;5.7%|<5,7%|<39 mmol/mol">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 10 -->
+<div class="section">
+  <div class="section-title">19. Lipidy</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał</th><th>Norma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">Cholesterol całkowity</td>
+        <td class="material" data-answer="osocze"><span class="q-material"></span><span class="correct-val">osocze</span></td>
+        <td class="answer-cell" data-answer="< 5,0 mmol/l" data-alt="&lt;5 mmol/l|<5,0 mmol/l|<190 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Trójglicerydy</td>
+        <td class="material" data-answer="osocze"><span class="q-material"></span><span class="correct-val">osocze</span></td>
+        <td class="answer-cell" data-answer="< 1,7 mmol/l" data-alt="&lt;1.7 mmol/l|<1,7 mmol/l|<150 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Lp(a)</td>
+        <td class="material" data-answer="osocze"><span class="q-material"></span><span class="correct-val">osocze</span></td>
+        <td class="answer-cell" data-answer="< 75 nmol/l" data-alt="&lt;75 nmol/l|<30 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 11 -->
+<div class="section">
+  <div class="section-title">21–22. Azot, mocznik, kreatynina, kwas moczowy</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał</th><th>Norma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">Mocznik</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="2,5 – 6,7 mmol/l" data-alt="2.5-6.7 mmol/l|15-40 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">BUN (azot mocznika)</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="5,0 – 13,4 mmol/l" data-alt="5.0-13.4 mmol/l|7-18,8 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Kreatynina — kobiety</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="53 – 97 µmol/l" data-alt="53-97 µmol/l|0,6-1,1 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Kreatynina — mężczyźni</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="80 – 115 µmol/l" data-alt="80-115 µmol/l|0,9-1,3 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Kwas moczowy</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="< 360 µmol/l" data-alt="&lt;360 µmol/l|<360 µmol/l|<6 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 12 -->
+<div class="section">
+  <div class="section-title">23. Hemoglobina</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał</th><th>Norma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">Hemoglobina — kobiety</td>
+        <td class="material" data-answer="krew"><span class="q-material"></span><span class="correct-val">krew</span></td>
+        <td class="answer-cell" data-answer="12 – 16 g/dl" data-alt="12-16 g/dl|7,5-9,9 mmol/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Hemoglobina — mężczyźni</td>
+        <td class="material" data-answer="krew"><span class="q-material"></span><span class="correct-val">krew</span></td>
+        <td class="answer-cell" data-answer="13 – 16,5 g/dl" data-alt="13-16.5 g/dl|13-16,5 g/dl|8,7-10,2 mmol/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 13 -->
+<div class="section">
+  <div class="section-title">24. Barwniki żółciowe</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał</th><th>Norma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">Bilirubina całkowita</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="< 17,1 µmol/l" data-alt="&lt;17.1 µmol/l|<1 mg/dl|<17,1 µmol/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Bilirubina bezpośrednia</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="< 5,1 µmol/l" data-alt="&lt;5.1 µmol/l|<0,3 mg/dl|<5,1 µmol/l">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- SECTION 14 -->
+<div class="section">
+  <div class="section-title">25. Badania moczu</div>
+  <table>
+    <thead><tr><th>Parametr</th><th>Materiał</th><th>Norma</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="param-name">Gęstość względna</td>
+        <td class="material" data-answer="mocz"><span class="q-material"></span><span class="correct-val">mocz</span></td>
+        <td class="answer-cell" data-answer="1,010 – 1,030 g/cm³" data-alt="1.010-1.030 g/cm3|1,010-1,030">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">pH moczu</td>
+        <td class="material" data-answer="mocz"><span class="q-material"></span><span class="correct-val">mocz</span></td>
+        <td class="answer-cell" data-answer="5,5 – 6,5" data-alt="5.5-6.5">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+      <tr>
+        <td class="param-name">Mleczany (wysiłek)</td>
+        <td class="material" data-answer="surowica"><span class="q-material"></span><span class="correct-val">surowica</span></td>
+        <td class="answer-cell" data-answer="0,6 – 2,2 mmol/l" data-alt="0.6-2.2 mmol/l|5-20 mg/dl">
+          <input class="answer" type="text" placeholder="…"><div class="hint"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="controls" style="margin-top:1rem">
+  <button class="btn" onclick="checkAll()">✓ Sprawdź wszystko</button>
+  <button class="btn btn-outline" onclick="resetAll()">↺ Reset</button>
+</div>
+
+<script>
+let currentMode = 'values';
+
+function normalize(str) {
+  return str
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/–/g, '-')
+    .replace(/—/g, '-')
+    .replace(/,/g, '.')
+    .replace(/µ/g, 'µ')
+    .trim();
+}
+
+function isCorrect(userVal, correctVal, altVals) {
+  const u = normalize(userVal);
+  const candidates = [correctVal, ...(altVals ? altVals.split('|') : [])];
+  return candidates.some(c => normalize(c) === u);
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('mode-values').classList.toggle('active', mode === 'values');
+  document.getElementById('mode-material').classList.toggle('active', mode === 'material');
+
+  // Toggle which column is quiz vs shown
+  document.querySelectorAll('td.material').forEach(td => {
+    const span = td.querySelector('.q-material');
+    const correctVal = td.querySelector('.correct-val');
+    const input = td.querySelector('input.answer');
+
+    if (mode === 'material') {
+      // In material mode: material cell becomes answer cell
+      if (!input) {
+        const inp = document.createElement('input');
+        inp.className = 'answer';
+        inp.type = 'text';
+        inp.placeholder = '…';
+        span.innerHTML = '';
+        span.appendChild(inp);
+      }
+      if (correctVal) correctVal.classList.remove('show');
+    } else {
+      // In values mode: show material, clear any inputs
+      const inp = td.querySelector('input.answer');
+      if (inp) inp.remove();
+      span.textContent = td.dataset.answer || '';
+      if (correctVal) correctVal.classList.remove('show');
+    }
+  });
+
+  // Also show/hide the value answer cells
+  document.querySelectorAll('td.answer-cell').forEach(td => {
+    const inp = td.querySelector('input.answer');
+    if (mode === 'values') {
+      if (inp) inp.disabled = false;
+    } else {
+      // Show the correct value, disable input
+      if (inp) {
+        inp.disabled = false; // still allow in values columns
+      }
+    }
+  });
+
+  // Reset classes
+  resetAll(true);
+  
+  // Re-initialize material spans in values mode
+  if (mode === 'values') {
+    document.querySelectorAll('td.material').forEach(td => {
+      const span = td.querySelector('.q-material');
+      if (span) span.textContent = td.dataset.answer || '';
+    });
+  }
+}
+
+// Initialize: show material values, hide answer values
+function init() {
+  document.querySelectorAll('td.material').forEach(td => {
+    const span = td.querySelector('.q-material');
+    if (span) span.textContent = td.dataset.answer || '';
+  });
+}
+
+function checkAll() {
+  const cells = document.querySelectorAll('td.answer-cell');
+  let correct = 0, total = 0;
+
+  cells.forEach(td => {
+    const inp = td.querySelector('input.answer');
+    const hint = td.querySelector('.hint');
+    if (!inp) return;
+
+    total++;
+    const userVal = inp.value.trim();
+    const correctVal = td.dataset.answer;
+    const altVals = td.dataset.alt || '';
+
+    if (!userVal) {
+      inp.classList.remove('correct', 'wrong');
+      hint.textContent = '';
+      hint.className = 'hint';
+      return;
+    }
+
+    if (isCorrect(userVal, correctVal, altVals)) {
+      inp.classList.remove('wrong');
+      inp.classList.add('correct');
+      hint.textContent = '✓ Poprawnie';
+      hint.className = 'hint show';
+      correct++;
+    } else {
+      inp.classList.remove('correct');
+      inp.classList.add('wrong');
+      hint.textContent = '✗ Prawidłowa: ' + correctVal;
+      hint.className = 'hint wrong-hint show';
+    }
+  });
+
+  // Update score
+  const bar = document.getElementById('scoreBar');
+  bar.classList.add('visible');
+  document.getElementById('scoreNum').textContent = correct + '/' + total;
+  const pct = total > 0 ? (correct / total * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function resetAll(silent) {
+  document.querySelectorAll('td.answer-cell input.answer').forEach(inp => {
+    inp.value = '';
+    inp.classList.remove('correct', 'wrong');
+  });
+  document.querySelectorAll('.hint').forEach(h => {
+    h.textContent = '';
+    h.className = 'hint';
+  });
+  document.querySelectorAll('.correct-val').forEach(v => v.classList.remove('show'));
+  if (!silent) {
+    document.getElementById('scoreBar').classList.remove('visible');
+  }
+}
+
+function showAll() {
+  document.querySelectorAll('td.answer-cell').forEach(td => {
+    const inp = td.querySelector('input.answer');
+    if (!inp) return;
+    inp.value = td.dataset.answer;
+    inp.classList.remove('wrong');
+    inp.classList.add('correct');
+    const hint = td.querySelector('.hint');
+    hint.textContent = '✓ Odpowiedź';
+    hint.className = 'hint show';
+  });
+}
+
+// Enter key moves to next input
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const inputs = Array.from(document.querySelectorAll('input.answer:not([disabled])'));
+    const idx = inputs.indexOf(document.activeElement);
+    if (idx >= 0 && idx < inputs.length - 1) {
+      inputs[idx + 1].focus();
+    } else {
+      checkAll();
+    }
+  }
+});
+
+init();
+</script>
+</body>
+</html>
